@@ -70,7 +70,6 @@
   <ItemGroup>
     <Content Include="app\piemix.component.html" />
     <Content Include="packages.config" />
-    <Content Include="LICENSE" />
     <Content Include="package.json" />
     <Content Include="tsconfig.json" />
     <Content Include="tslint.json" />
