@@ -22,7 +22,8 @@
     "rxjs": "5.0.0-beta.2",
     "zone.js": "0.6.10",
     "a2-in-memory-web-api": "^0.1.15",
-    "underscore": "^1.8.3"
+    "underscore": "^1.8.3",
+    "jquery": "^2.2.3"
   },
   "devDependencies": {
     "canonical-path": "0.0.2",
