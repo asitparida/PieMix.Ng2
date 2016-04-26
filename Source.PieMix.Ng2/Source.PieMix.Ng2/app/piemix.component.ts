@@ -1,4 +1,4 @@
-﻿import {Component, Input} from 'angular2/core';
+﻿import {Component, Input, ChangeDetectorRef} from 'angular2/core';
 
 import {ViewContainerRef, AfterViewInit} from 'angular2/core';
 
@@ -11,11 +11,12 @@ import {ViewContainerRef, AfterViewInit} from 'angular2/core';
 
 export class PieMixComponent implements AfterViewInit {
 
+    showChart: boolean = false;
     svgHolderHeight: number = 500;
-    svgHeight: number = 0;
-    svgWidth: number = 0;
-    baseRadius: number = 100;
-    radiusIncrementFactor: number = 60;
+    svgHeight: number ;
+    svgWidth: number;
+    baseRadius: number;
+    radiusIncrementFactor: number;
     strokeColor: string = '#fff';
     strokeWidth: number = 0;
     gapToLabel: number = 0;
@@ -24,7 +25,8 @@ export class PieMixComponent implements AfterViewInit {
     //coordinates = {};
     centerXY: CoordinatePair = new CoordinatePair(0, 0);
     maxRad: number = 5
-    generatedPies = [];
+    generatedPies: Array<PieSlice>;
+    generatedPiesOrdered: Array<PieSlice> ;
     coordinateMaps: CoordinatePairMapToId = {};
     strokeCircle: any = {};
 
@@ -65,9 +67,9 @@ export class PieMixComponent implements AfterViewInit {
         let id: string = deg + 'deg_' + rad + '_rad' + JSON.stringify(this.centerXY);
         if (typeof this.coordinateMaps[id] !== 'undefined' && this.coordinateMaps[id] != null)
             return this.coordinateMaps[id];
-        var x = 0, y = 0;
-        var rSin0 = Math.abs(rad * Math.sin(deg * 0.0174533));
-        var rCos0 = Math.abs(rad * Math.cos(deg * 0.0174533));
+        let x = 0, y = 0;
+        let rSin0 = Math.abs(rad * Math.sin(deg * 0.0174533));
+        let rCos0 = Math.abs(rad * Math.cos(deg * 0.0174533));
         if (deg >= 0 && deg <= 90) {
             x = centerXY.x + rSin0; y = centerXY.y - rCos0;
         }
@@ -84,8 +86,12 @@ export class PieMixComponent implements AfterViewInit {
         return this.coordinateMaps[id];
     }
 
-    private generatePies = function (_origPie, itr, _parentPiece): void {
-        var _totalPieValue = _.reduce(_origPie, function (memo, item) { return memo + item.value }, 0);
+    private generatePies(_origPie: Array<PieSlice>, itr: number, _parentPiece: PieSlice): void {
+        let _totalPieValue = 0;
+        _.each(_origPie, function (_pie: PieSlice) {
+            _totalPieValue = _totalPieValue + _pie.value;
+        });
+        //var _totalPieValue = _.reduce(_origPie, function (memo, item) { return memo + item.value }, 0);
         var _degStart = 0;
         let self = this;
         _.each(_origPie, function (_slice, peiceIter) {
@@ -177,7 +183,7 @@ export class PieMixComponent implements AfterViewInit {
 
     private getContainerWidth(): number {
         let elem = this.elemRef.element.nativeElement;
-        if (typeof elem !== 'undefined' && elem != null)
+        if (elem)
             return jQuery(elem).width();
         else
             return (2 * this.maxRad);
@@ -185,7 +191,7 @@ export class PieMixComponent implements AfterViewInit {
 
     private getContainerHeight(): number {
         let elem = this.elemRef.element.nativeElement;
-        if (typeof elem !== 'undefined' && elem != null)
+        if (elem)
             return jQuery(elem).height();
         else
             return (2 * this.maxRad);
@@ -228,48 +234,43 @@ export class PieMixComponent implements AfterViewInit {
     private drawHelpBoxes(): void {
         let ctr: any = { 'NE': 0, 'SE': 0, 'NW': 0, 'SW': 0 };
         let minBoxHeight = 50;
-        let pies = _.sortBy(this.generatedPies, function (slice) { return -slice.priority });
         let self = this;
         /* GET MIN X & Y FROM ELEMENT */
         let quadrant = this.calcQuadrants();
-        _.each(pies, function (slice) {
+        _.each(this.generatedPies, function (slice) {
             ctr['id'] = slice.id;
             let quadKey = self.getQuadrantKey(slice.midDeg);
             let baseXY = _.clone(quadrant[quadKey]);
             baseXY.y = baseXY.y + ctr[quadKey];
             /* calaculating ptr string for */
             if (quadKey == 'NE' || quadKey == 'SE') {
-                let midpoint = { 'x': baseXY.x, 'y': baseXY.y };
-                let stpoint = { 'x': baseXY.x + 100, 'y': baseXY.y };
-                let endPoint = slice.midXY;
+                let midpoint = new CoordinatePair(baseXY.x, baseXY.y);
+                let stpoint = new CoordinatePair(baseXY.x + 100, baseXY.y);
+                let endPoint = new CoordinatePair(slice.midXY.x, slice.midXY.y);
                 slice._ptr = endPoint.x + ',' + endPoint.y + ' ' + midpoint.x + ',' + midpoint.y + ' ' + stpoint.x + ',' + stpoint.y;
                 /* calculating color box coordinates */
-                slice.colorBox = { 'x': midpoint.x, 'y': midpoint.y + 8 };
+                slice.colorBox = new CoordinatePair(midpoint.x, midpoint.y + 8);
                 /* calculating text box coordinates */
-                slice.textBox = { 'x': midpoint.x + 24, 'y': midpoint.y + 20 };
+                slice.textBox = new CoordinatePair(midpoint.x + 24, midpoint.y + 20);
                 /* increment ctr */
                 slice.incr = ctr[quadKey];
             }
             else if (quadKey == 'NW' || quadKey == 'SW') {
-                let midpoint = { 'x': baseXY.x, 'y': baseXY.y };
-                let stpoint = { 'x': baseXY.x - 100, 'y': baseXY.y };
-                let endPoint = slice.midXY;
+                let midpoint = new CoordinatePair(baseXY.x, baseXY.y);
+                let stpoint = new CoordinatePair(baseXY.x - 100, baseXY.y);
+                let endPoint = new CoordinatePair(slice.midXY.x, slice.midXY.y);
                 slice._ptr = stpoint.x + ',' + stpoint.y + ' ' + midpoint.x + ',' + midpoint.y + ' ' + endPoint.x + ',' + endPoint.y;
                 /* calculating color box coordinates */
-                slice.colorBox = { 'x': midpoint.x - 100, 'y': midpoint.y + 8 };
+                slice.colorBox = new CoordinatePair(midpoint.x - 100, midpoint.y + 8);
                 /* calculating text box coordinates */
-                slice.textBox = { 'x': midpoint.x - 100 + 24, 'y': midpoint.y + 20 };
+                slice.textBox = new CoordinatePair(midpoint.x - 100 + 24, midpoint.y + 20);
                 /* increment ctr */
                 slice.incr = ctr[quadKey];
             }
             ctr[quadKey] = ctr[quadKey] + minBoxHeight;
-            var _actSlice = _.find(self.generatedPies, function (_sl) { return _sl._uid.localeCompare(slice._uid) == 0; })
-            if (typeof _actSlice !== 'undefined' && _actSlice != null && _actSlice != {}) {
-                _actSlice.colorBox = slice.colorBox;
-                _actSlice.textBox = slice.textBox;
-                _actSlice.ptr = slice._ptr;
-                _actSlice.fillOpacity = 1;
-            }
+            slice.ptr = slice._ptr;
+            slice.fillOpacity = 1;
+            console.log(slice);
         });
     }
 
@@ -279,14 +280,49 @@ export class PieMixComponent implements AfterViewInit {
         this.svgWidth = this.getContainerWidth();
         this.svgHeight = (2 * this.maxRad) + 100;
         this.generatePies(slices, 1, null);
+        this.drawHelpBoxes();
+        this.generatedPiesOrdered = _.sortBy(this.generatedPies, function (pie) { return -pie.priority });
         //insert center white stroke filled circle
         if (this.showStrokeCircleAtCenter == true) {
             this.strokeCircle = { 'cx': this.centerXY.x, 'cy': this.centerXY.y, 'r': this.baseRadius * 0.5, 'fill': this.strokeColor };
         }
-        //let _pieSlic = { '_uid': _GUID(), 'activecolor': this.strokeColor, 'color': this.strokeColor };
-        //$timeout(this.drawHelpBoxes, 500);
+        this.showChart = true;
+        this.cdr.detectChanges();
+        console.log(this);
     }
 
+    private transformPieToClass(values: Array<any>): Array<PieSlice> {
+        let transformedArray: Array<PieSlice> = new Array<PieSlice>();
+        var self = this;
+        _.each(values, function (val) {
+            let slice = new PieSlice();
+            slice.id = val.id;
+            slice.title = val.title;
+            slice.value = val.value;
+            slice.color = val.color;
+            if (typeof val.child !== 'undefined' && val.child != null && val.child != {} && val.child.length > 0) {
+                slice.child = self.transformPieToClass(val.child);
+            }
+            transformedArray.push(slice);
+        });
+        return transformedArray;
+    }
+
+    public highlightPie(pieId: string): void {
+        _.each(this.generatedPiesOrdered, function (pie) {
+            if (pie.id == pieId) {
+                pie.activecolor = '#000';
+            }
+        });
+    }
+
+    public dehighlightPie(pieId: string): void {
+        _.each(this.generatedPiesOrdered, function (pie) {
+            if (pie.id == pieId) {
+                pie.activecolor = pie.color;
+            }
+        });
+    }
 
     private init(values) {
         this.baseRadius = this.config.baseRadius || 100;
@@ -300,17 +336,15 @@ export class PieMixComponent implements AfterViewInit {
         this.generatedPies = [];
         this.centerXY = new CoordinatePair(0, 0);
         this.maxRad = 0;
-        this.startGenerating(values);
+        this.startGenerating(this.transformPieToClass(values));
     }
 
     ngAfterViewInit() {
         // viewChild is updated after the view has been initialized
-        console.log(this.getContainerWidth());
+        this.init(this.pieData);
     }
 
-    constructor(private elemRef: ViewContainerRef) {
-        this.init(this.pieData);
-        console.log(this.calDeepLength(this.pieData));
+    constructor(private elemRef: ViewContainerRef, private cdr: ChangeDetectorRef) {
     };
 
 }
@@ -337,6 +371,7 @@ export class NonDisplayPieProperties {
     rad: number = 0;
     degStart: number = 0;
     effectiveDeg: number = 0;
+    deg: number = 0
     midDeg: number = 0;
     degEnd: number = 0;
     startXY: CoordinatePair;
@@ -353,8 +388,12 @@ export class NonDisplayPieProperties {
 
 export class PieSlice extends NonDisplayPieProperties {
     _uid: string = '';
+
+    id: string = '';
+    value: number = 0;
+    child: Array<PieSlice>;
     d: string = '';
-    prority: number = 0;
+    priority: number = 0;
     activecolor: string = '';
     color: string = '';
     colorBox: CoordinatePair;
@@ -365,5 +404,8 @@ export class PieSlice extends NonDisplayPieProperties {
     constructor() {
         super();
         this._uid = _GUID();
+        this.child = [];
+        this.colorBox = new CoordinatePair(0, 0);
+        this.textBox = new CoordinatePair(0, 0);
     }
 }
