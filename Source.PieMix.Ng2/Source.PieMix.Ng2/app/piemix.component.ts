@@ -11,6 +11,9 @@ import {ViewContainerRef, AfterViewInit} from 'angular2/core';
 
 export class PieMixComponent implements AfterViewInit {
 
+    @Input() slices: any;
+    @Input() config: any;
+
     showChart: boolean = false;
     svgHolderHeight: number = 500;
     svgHeight: number ;
@@ -27,41 +30,8 @@ export class PieMixComponent implements AfterViewInit {
     maxRad: number = 5
     generatedPies: Array<PieSlice>;
     generatedPiesOrdered: Array<PieSlice> ;
-    coordinateMaps: CoordinatePairMapToId = {};
+    coordinateMaps: CoordinatePairMap<CoordinatePair> = {};
     strokeCircle: any = {};
-
-    //_templateRef: TemplateRef;
-    //_viewContainer: ViewContainerRef;
-
-    pieData = [
-        {
-            'id': '1001', 'title': '# c0392b', 'value': 20, 'color': '#c0392b', 'child': [
-                {
-                    'id': '101', 'title': '# 34495e', 'value': 60, 'color': '#34495e', 'child': [
-                        {
-                            'id': '201', 'title': '# 3498db', 'value': 40, 'color': '#3498db', 'child': [
-                                { 'id': '301', 'title': '# f39c12', 'value': 67, 'color': '#f39c12' },
-                                { 'id': '302', 'title': '# e74c3c', 'value': 33, 'color': '#e74c3c' }
-                            ]
-                        },
-                        { 'id': '202', 'title': '# 9b59b6', 'value': 60, 'color': '#9b59b6' }
-                    ]
-                },
-                { 'id': '102', 'title': '# 2ecc71', 'value': 20, 'color': '#2ecc71' },
-                { 'id': '103', 'title': '# 16a085', 'value': 20, 'color': '#16a085' }
-            ]
-        }
-    ];
-
-    config = {
-        'baseRadius': 80,
-        'radiusIncrementFactor': 0.50,
-        'gapToLabel': 60,
-        'strokeWidth': 3,
-        'showLabels': true,
-        'strokeColor': '#fff',
-        'showStrokeCircleAtCenter': true
-    };
 
     private generateCoordinates(deg, rad, centerXY): CoordinatePair {
         let id: string = deg + 'deg_' + rad + '_rad' + JSON.stringify(this.centerXY);
@@ -204,8 +174,8 @@ export class PieMixComponent implements AfterViewInit {
         return new CoordinatePair(widthBuffer, this.maxRad + (pad * 2));
     }
 
-    private calcQuadrants(): CoordinatePairMapToId {
-        let quadrant: CoordinatePairMapToId = {};
+    private calcQuadrants(): CoordinatePairMap<CoordinatePair> {
+        let quadrant: CoordinatePairMap<CoordinatePair> = {};
         let width = this.getContainerWidth();
         let height = this.getContainerHeight();
         let whalf = width / 2;
@@ -247,7 +217,7 @@ export class PieMixComponent implements AfterViewInit {
                 let midpoint = new CoordinatePair(baseXY.x, baseXY.y);
                 let stpoint = new CoordinatePair(baseXY.x + 100, baseXY.y);
                 let endPoint = new CoordinatePair(slice.midXY.x, slice.midXY.y);
-                slice._ptr = endPoint.x + ',' + endPoint.y + ' ' + midpoint.x + ',' + midpoint.y + ' ' + stpoint.x + ',' + stpoint.y;
+                slice.ptr = endPoint.x + ',' + endPoint.y + ' ' + midpoint.x + ',' + midpoint.y + ' ' + stpoint.x + ',' + stpoint.y;
                 /* calculating color box coordinates */
                 slice.colorBox = new CoordinatePair(midpoint.x, midpoint.y + 8);
                 /* calculating text box coordinates */
@@ -259,7 +229,7 @@ export class PieMixComponent implements AfterViewInit {
                 let midpoint = new CoordinatePair(baseXY.x, baseXY.y);
                 let stpoint = new CoordinatePair(baseXY.x - 100, baseXY.y);
                 let endPoint = new CoordinatePair(slice.midXY.x, slice.midXY.y);
-                slice._ptr = stpoint.x + ',' + stpoint.y + ' ' + midpoint.x + ',' + midpoint.y + ' ' + endPoint.x + ',' + endPoint.y;
+                slice.ptr = stpoint.x + ',' + stpoint.y + ' ' + midpoint.x + ',' + midpoint.y + ' ' + endPoint.x + ',' + endPoint.y;
                 /* calculating color box coordinates */
                 slice.colorBox = new CoordinatePair(midpoint.x - 100, midpoint.y + 8);
                 /* calculating text box coordinates */
@@ -268,9 +238,8 @@ export class PieMixComponent implements AfterViewInit {
                 slice.incr = ctr[quadKey];
             }
             ctr[quadKey] = ctr[quadKey] + minBoxHeight;
-            slice.ptr = slice._ptr;
+            slice.ptr = slice.ptr;
             slice.fillOpacity = 1;
-            console.log(slice);
         });
     }
 
@@ -281,25 +250,26 @@ export class PieMixComponent implements AfterViewInit {
         this.svgHeight = (2 * this.maxRad) + 100;
         this.generatePies(slices, 1, null);
         this.drawHelpBoxes();
-        this.generatedPiesOrdered = _.sortBy(this.generatedPies, function (pie) { return -pie.priority });
+        //this.generatedPiesOrdered = _.sortBy(this.generatedPies, function (pie) { return -pie.priority });
+        this.generatedPiesOrdered = this.generatedPies.sort(this.pieSort);
         //insert center white stroke filled circle
         if (this.showStrokeCircleAtCenter == true) {
             this.strokeCircle = { 'cx': this.centerXY.x, 'cy': this.centerXY.y, 'r': this.baseRadius * 0.5, 'fill': this.strokeColor };
         }
         this.showChart = true;
         this.cdr.detectChanges();
-        console.log(this);
     }
 
     private transformPieToClass(values: Array<any>): Array<PieSlice> {
         let transformedArray: Array<PieSlice> = new Array<PieSlice>();
         var self = this;
-        _.each(values, function (val) {
+        _.each(values, function (val, iterator) {
             let slice = new PieSlice();
             slice.id = val.id;
             slice.title = val.title;
             slice.value = val.value;
             slice.color = val.color;
+            slice.iterator = iterator;
             if (typeof val.child !== 'undefined' && val.child != null && val.child != {} && val.child.length > 0) {
                 slice.child = self.transformPieToClass(val.child);
             }
@@ -324,14 +294,14 @@ export class PieMixComponent implements AfterViewInit {
         });
     }
 
-    private init(values) {
-        this.baseRadius = this.config.baseRadius || 100;
-        this.radiusIncrementFactor = this.config.radiusIncrementFactor || 0.66;
-        this.gapToLabel = this.config.gapToLabel || 60;
-        this.strokeColor = this.config.strokeColor || '#fff';
-        this.strokeWidth = this.config.strokeWidth || 0;
-        this.showLabels = this.config.showLabels;
-        this.showStrokeCircleAtCenter = this.config.showStrokeCircleAtCenter;
+    private init(values, config) {
+        this.baseRadius = config.baseRadius || 100;
+        this.radiusIncrementFactor = config.radiusIncrementFactor || 0.66;
+        this.gapToLabel = config.gapToLabel || 60;
+        this.strokeColor = config.strokeColor || '#fff';
+        this.strokeWidth = config.strokeWidth || 0;
+        this.showLabels = config.showLabels;
+        this.showStrokeCircleAtCenter = config.showStrokeCircleAtCenter;
         this.coordinateMaps = {};
         this.generatedPies = [];
         this.centerXY = new CoordinatePair(0, 0);
@@ -339,9 +309,19 @@ export class PieMixComponent implements AfterViewInit {
         this.startGenerating(this.transformPieToClass(values));
     }
 
+    private pieSort(a: PieSlice, b: PieSlice): number {
+        if (a.priority != b.priority) {
+            return b.priority - a.priority;
+        }
+        else if (a.priority == b.priority) {
+            return b.iterator - a.iterator;
+        }
+        return 0;
+    }
+
     ngAfterViewInit() {
         // viewChild is updated after the view has been initialized
-        this.init(this.pieData);
+        this.init(this.slices, this.config);
     }
 
     constructor(private elemRef: ViewContainerRef, private cdr: ChangeDetectorRef) {
@@ -353,8 +333,8 @@ export class CoordinatePair {
     constructor(public x: number, public y: number) { }
 }
 
-interface CoordinatePairMapToId {
-    [id: string]: CoordinatePair;
+interface CoordinatePairMap<T> {
+    [id: string]: T;
 }
 
 function _GUID(): string {
@@ -378,6 +358,10 @@ export class NonDisplayPieProperties {
     midXY: CoordinatePair;
     endXY: CoordinatePair;
     pathCoeff: number = 0;
+    ptr: string = '';
+    incr: number = 0;
+    created: number;
+    iterator: number;
 
     constructor() {
         this.startXY = new CoordinatePair(0, 0);
@@ -407,5 +391,6 @@ export class PieSlice extends NonDisplayPieProperties {
         this.child = [];
         this.colorBox = new CoordinatePair(0, 0);
         this.textBox = new CoordinatePair(0, 0);
+        this.created = Date.now();
     }
 }
