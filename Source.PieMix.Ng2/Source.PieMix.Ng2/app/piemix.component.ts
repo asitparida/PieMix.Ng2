@@ -11,6 +11,9 @@ import {ViewContainerRef, AfterViewInit} from 'angular2/core';
 
 export class PieMixComponent implements AfterViewInit {
 
+    @Input() slices: any;
+    @Input() config: any;
+
     showChart: boolean = false;
     svgHolderHeight: number = 500;
     svgHeight: number ;
@@ -29,39 +32,6 @@ export class PieMixComponent implements AfterViewInit {
     generatedPiesOrdered: Array<PieSlice> ;
     coordinateMaps: CoordinatePairMap<CoordinatePair> = {};
     strokeCircle: any = {};
-
-    //_templateRef: TemplateRef;
-    //_viewContainer: ViewContainerRef;
-
-    pieData = [
-        {
-            'id': '1001', 'title': '# c0392b', 'value': 20, 'color': '#c0392b', 'child': [
-                {
-                    'id': '101', 'title': '# 34495e', 'value': 60, 'color': '#34495e', 'child': [
-                        {
-                            'id': '201', 'title': '# 3498db', 'value': 40, 'color': '#3498db', 'child': [
-                                { 'id': '301', 'title': '# f39c12', 'value': 67, 'color': '#f39c12' },
-                                { 'id': '302', 'title': '# e74c3c', 'value': 33, 'color': '#e74c3c' }
-                            ]
-                        },
-                        { 'id': '202', 'title': '# 9b59b6', 'value': 60, 'color': '#9b59b6' }
-                    ]
-                },
-                { 'id': '102', 'title': '# 2ecc71', 'value': 20, 'color': '#2ecc71' },
-                { 'id': '103', 'title': '# 16a085', 'value': 20, 'color': '#16a085' }
-            ]
-        }
-    ];
-
-    config = {
-        'baseRadius': 80,
-        'radiusIncrementFactor': 0.50,
-        'gapToLabel': 60,
-        'strokeWidth': 3,
-        'showLabels': true,
-        'strokeColor': '#fff',
-        'showStrokeCircleAtCenter': true
-    };
 
     private generateCoordinates(deg, rad, centerXY): CoordinatePair {
         let id: string = deg + 'deg_' + rad + '_rad' + JSON.stringify(this.centerXY);
@@ -151,8 +121,6 @@ export class PieMixComponent implements AfterViewInit {
             _slice.d = _path;
             let _copy = _.clone(_slice);
             delete _copy.child;
-            if (_slice.id == '103')
-                console.log(_slice);
             self.generatedPies.push(_copy);
             if (typeof _slice.child !== 'undefined' && _slice.child != {} && _slice.child.length > 0)
                 self.generatePies(_slice.child, itr + 1, _slice);
@@ -290,7 +258,6 @@ export class PieMixComponent implements AfterViewInit {
         }
         this.showChart = true;
         this.cdr.detectChanges();
-        console.log(this);
     }
 
     private transformPieToClass(values: Array<any>): Array<PieSlice> {
@@ -303,7 +270,6 @@ export class PieMixComponent implements AfterViewInit {
             slice.value = val.value;
             slice.color = val.color;
             slice.iterator = iterator;
-            console.log(slice.iterator);
             if (typeof val.child !== 'undefined' && val.child != null && val.child != {} && val.child.length > 0) {
                 slice.child = self.transformPieToClass(val.child);
             }
@@ -328,14 +294,14 @@ export class PieMixComponent implements AfterViewInit {
         });
     }
 
-    private init(values) {
-        this.baseRadius = this.config.baseRadius || 100;
-        this.radiusIncrementFactor = this.config.radiusIncrementFactor || 0.66;
-        this.gapToLabel = this.config.gapToLabel || 60;
-        this.strokeColor = this.config.strokeColor || '#fff';
-        this.strokeWidth = this.config.strokeWidth || 0;
-        this.showLabels = this.config.showLabels;
-        this.showStrokeCircleAtCenter = this.config.showStrokeCircleAtCenter;
+    private init(values, config) {
+        this.baseRadius = config.baseRadius || 100;
+        this.radiusIncrementFactor = config.radiusIncrementFactor || 0.66;
+        this.gapToLabel = config.gapToLabel || 60;
+        this.strokeColor = config.strokeColor || '#fff';
+        this.strokeWidth = config.strokeWidth || 0;
+        this.showLabels = config.showLabels;
+        this.showStrokeCircleAtCenter = config.showStrokeCircleAtCenter;
         this.coordinateMaps = {};
         this.generatedPies = [];
         this.centerXY = new CoordinatePair(0, 0);
@@ -355,7 +321,7 @@ export class PieMixComponent implements AfterViewInit {
 
     ngAfterViewInit() {
         // viewChild is updated after the view has been initialized
-        this.init(this.pieData);
+        this.init(this.slices, this.config);
     }
 
     constructor(private elemRef: ViewContainerRef, private cdr: ChangeDetectorRef) {
