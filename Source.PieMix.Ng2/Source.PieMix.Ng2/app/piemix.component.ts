@@ -27,7 +27,7 @@ export class PieMixComponent implements AfterViewInit {
     maxRad: number = 5
     generatedPies: Array<PieSlice>;
     generatedPiesOrdered: Array<PieSlice> ;
-    coordinateMaps: CoordinatePairMapToId = {};
+    coordinateMaps: CoordinatePairMap<CoordinatePair> = {};
     strokeCircle: any = {};
 
     //_templateRef: TemplateRef;
@@ -206,8 +206,8 @@ export class PieMixComponent implements AfterViewInit {
         return new CoordinatePair(widthBuffer, this.maxRad + (pad * 2));
     }
 
-    private calcQuadrants(): CoordinatePairMapToId {
-        let quadrant: CoordinatePairMapToId = {};
+    private calcQuadrants(): CoordinatePairMap<CoordinatePair> {
+        let quadrant: CoordinatePairMap<CoordinatePair> = {};
         let width = this.getContainerWidth();
         let height = this.getContainerHeight();
         let whalf = width / 2;
@@ -367,8 +367,8 @@ export class CoordinatePair {
     constructor(public x: number, public y: number) { }
 }
 
-interface CoordinatePairMapToId {
-    [id: string]: CoordinatePair;
+interface CoordinatePairMap<T> {
+    [id: string]: T;
 }
 
 function _GUID(): string {
