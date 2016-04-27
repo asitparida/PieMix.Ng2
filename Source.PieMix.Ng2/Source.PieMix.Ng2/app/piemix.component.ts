@@ -151,6 +151,8 @@ export class PieMixComponent implements AfterViewInit {
             _slice.d = _path;
             let _copy = _.clone(_slice);
             delete _copy.child;
+            if (_slice.id == '103')
+                console.log(_slice);
             self.generatedPies.push(_copy);
             if (typeof _slice.child !== 'undefined' && _slice.child != {} && _slice.child.length > 0)
                 self.generatePies(_slice.child, itr + 1, _slice);
@@ -270,7 +272,6 @@ export class PieMixComponent implements AfterViewInit {
             ctr[quadKey] = ctr[quadKey] + minBoxHeight;
             slice.ptr = slice.ptr;
             slice.fillOpacity = 1;
-            console.log(slice);
         });
     }
 
@@ -281,7 +282,8 @@ export class PieMixComponent implements AfterViewInit {
         this.svgHeight = (2 * this.maxRad) + 100;
         this.generatePies(slices, 1, null);
         this.drawHelpBoxes();
-        this.generatedPiesOrdered = _.sortBy(this.generatedPies, function (pie) { return -pie.priority });
+        //this.generatedPiesOrdered = _.sortBy(this.generatedPies, function (pie) { return -pie.priority });
+        this.generatedPiesOrdered = this.generatedPies.sort(this.pieSort);
         //insert center white stroke filled circle
         if (this.showStrokeCircleAtCenter == true) {
             this.strokeCircle = { 'cx': this.centerXY.x, 'cy': this.centerXY.y, 'r': this.baseRadius * 0.5, 'fill': this.strokeColor };
@@ -294,12 +296,14 @@ export class PieMixComponent implements AfterViewInit {
     private transformPieToClass(values: Array<any>): Array<PieSlice> {
         let transformedArray: Array<PieSlice> = new Array<PieSlice>();
         var self = this;
-        _.each(values, function (val) {
+        _.each(values, function (val, iterator) {
             let slice = new PieSlice();
             slice.id = val.id;
             slice.title = val.title;
             slice.value = val.value;
             slice.color = val.color;
+            slice.iterator = iterator;
+            console.log(slice.iterator);
             if (typeof val.child !== 'undefined' && val.child != null && val.child != {} && val.child.length > 0) {
                 slice.child = self.transformPieToClass(val.child);
             }
@@ -337,6 +341,16 @@ export class PieMixComponent implements AfterViewInit {
         this.centerXY = new CoordinatePair(0, 0);
         this.maxRad = 0;
         this.startGenerating(this.transformPieToClass(values));
+    }
+
+    private pieSort(a: PieSlice, b: PieSlice): number {
+        if (a.priority != b.priority) {
+            return b.priority - a.priority;
+        }
+        else if (a.priority == b.priority) {
+            return b.iterator - a.iterator;
+        }
+        return 0;
     }
 
     ngAfterViewInit() {
@@ -380,6 +394,8 @@ export class NonDisplayPieProperties {
     pathCoeff: number = 0;
     ptr: string = '';
     incr: number = 0;
+    created: number;
+    iterator: number;
 
     constructor() {
         this.startXY = new CoordinatePair(0, 0);
@@ -409,5 +425,6 @@ export class PieSlice extends NonDisplayPieProperties {
         this.child = [];
         this.colorBox = new CoordinatePair(0, 0);
         this.textBox = new CoordinatePair(0, 0);
+        this.created = Date.now();
     }
 }
