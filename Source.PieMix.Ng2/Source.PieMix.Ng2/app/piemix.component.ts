@@ -247,7 +247,7 @@ export class PieMixComponent implements AfterViewInit {
                 let midpoint = new CoordinatePair(baseXY.x, baseXY.y);
                 let stpoint = new CoordinatePair(baseXY.x + 100, baseXY.y);
                 let endPoint = new CoordinatePair(slice.midXY.x, slice.midXY.y);
-                slice._ptr = endPoint.x + ',' + endPoint.y + ' ' + midpoint.x + ',' + midpoint.y + ' ' + stpoint.x + ',' + stpoint.y;
+                slice.ptr = endPoint.x + ',' + endPoint.y + ' ' + midpoint.x + ',' + midpoint.y + ' ' + stpoint.x + ',' + stpoint.y;
                 /* calculating color box coordinates */
                 slice.colorBox = new CoordinatePair(midpoint.x, midpoint.y + 8);
                 /* calculating text box coordinates */
@@ -259,7 +259,7 @@ export class PieMixComponent implements AfterViewInit {
                 let midpoint = new CoordinatePair(baseXY.x, baseXY.y);
                 let stpoint = new CoordinatePair(baseXY.x - 100, baseXY.y);
                 let endPoint = new CoordinatePair(slice.midXY.x, slice.midXY.y);
-                slice._ptr = stpoint.x + ',' + stpoint.y + ' ' + midpoint.x + ',' + midpoint.y + ' ' + endPoint.x + ',' + endPoint.y;
+                slice.ptr = stpoint.x + ',' + stpoint.y + ' ' + midpoint.x + ',' + midpoint.y + ' ' + endPoint.x + ',' + endPoint.y;
                 /* calculating color box coordinates */
                 slice.colorBox = new CoordinatePair(midpoint.x - 100, midpoint.y + 8);
                 /* calculating text box coordinates */
@@ -268,7 +268,7 @@ export class PieMixComponent implements AfterViewInit {
                 slice.incr = ctr[quadKey];
             }
             ctr[quadKey] = ctr[quadKey] + minBoxHeight;
-            slice.ptr = slice._ptr;
+            slice.ptr = slice.ptr;
             slice.fillOpacity = 1;
             console.log(slice);
         });
@@ -378,6 +378,8 @@ export class NonDisplayPieProperties {
     midXY: CoordinatePair;
     endXY: CoordinatePair;
     pathCoeff: number = 0;
+    ptr: string = '';
+    incr: number = 0;
 
     constructor() {
         this.startXY = new CoordinatePair(0, 0);
