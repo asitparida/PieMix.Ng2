@@ -1,5 +1,4 @@
-﻿import {Component, Input, ChangeDetectorRef} from 'angular2/core';
-
+﻿import {Component, Input, ChangeDetectorRef, DoCheck} from 'angular2/core';
 import {ViewContainerRef, AfterViewInit} from 'angular2/core';
 
 
@@ -9,10 +8,13 @@ import {ViewContainerRef, AfterViewInit} from 'angular2/core';
     providers: [ViewContainerRef]
 })
 
-export class PieMixComponent implements AfterViewInit {
+export class PieMixComponent implements AfterViewInit, DoCheck {
 
     @Input() slices: any;
     @Input() config: any;
+
+    previousConfig: any;
+    previousSlices: any;
 
     showChart: boolean = false;
     svgHolderHeight: number = 500;
@@ -32,6 +34,8 @@ export class PieMixComponent implements AfterViewInit {
     generatedPiesOrdered: Array<PieSlice> ;
     coordinateMaps: CoordinatePairMap<CoordinatePair> = {};
     strokeCircle: any = {};
+
+    initialized: boolean = false;
 
     private generateCoordinates(deg, rad, centerXY): CoordinatePair {
         let id: string = deg + 'deg_' + rad + '_rad' + JSON.stringify(this.centerXY);
@@ -258,6 +262,8 @@ export class PieMixComponent implements AfterViewInit {
         }
         this.showChart = true;
         this.cdr.detectChanges();
+        if (!this.initialized)
+            this.initialized = true;
     }
 
     private transformPieToClass(values: Array<any>): Array<PieSlice> {
@@ -295,6 +301,8 @@ export class PieMixComponent implements AfterViewInit {
     }
 
     private init(values, config) {
+        this.previousConfig = _.clone(config);
+        this.previousSlices = _.clone(values);
         this.baseRadius = config.baseRadius || 100;
         this.radiusIncrementFactor = config.radiusIncrementFactor || 0.66;
         this.gapToLabel = config.gapToLabel || 60;
@@ -320,8 +328,17 @@ export class PieMixComponent implements AfterViewInit {
     }
 
     ngAfterViewInit() {
-        // viewChild is updated after the view has been initialized
         this.init(this.slices, this.config);
+    }
+
+    ngDoCheck() {
+        if (this.initialized) {
+            let _configCompare = _.isEqual(this.config, this.previousConfig);
+            let _dataCompare = _.isEqual(this.slices, this.previousSlices);
+            if (!_configCompare || !_dataCompare) {
+                this.init(this.slices, this.config);
+            }
+        }
     }
 
     constructor(private elemRef: ViewContainerRef, private cdr: ChangeDetectorRef) {
